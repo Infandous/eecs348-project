@@ -1,0 +1,15 @@
+meeting time: 6 p.m. - 7:30 p.m.
+place: Discord
+participants: Everyone but William. Sean and Naran left at 7 p.m.
+
+Topic of meeting:
+
+Working on software development plan for calculator application. 
+Everyone worked on various sections without a particular order 
+and collaborated when decisions needed to be made.
+
+Decisions made:
+
+group roles
+
+
