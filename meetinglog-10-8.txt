@@ -1,0 +1,8 @@
+Date: October 8, 2023 4p.m. - 6:25 p.m.
+Attendees: Sean Brady, Christopher Harvey, Naran Bat, Peter Walsdorf, William Morris, and Kristin Boeckmann
+
+Topic of meeting:
+Worked on and discussed the software requirements specifications document.
+
+Decisions made: 
+Requirements for application as well as all information to be included in the software requirements specifications document.
