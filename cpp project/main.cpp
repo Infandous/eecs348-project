@@ -3,6 +3,7 @@
 #include <sstream>
 #include <string>
 #include <map>  // Include the <map> header for variable storage
+#include <queue>
 #include "calculation.h"
 #include "add.cpp"
 #include "subtract.cpp"
@@ -10,6 +11,7 @@
 #include "divide.cpp"
 #include "mod.cpp"
 #include "exp.cpp"
+#include "parse.cpp"
 
 using namespace std;
 
@@ -69,39 +71,49 @@ int main() {
         }
 
         // Parse the input for calculation
-        char operation;
+       /* char operation;
         string operand1Str, operand2Str;
-
+*/
         // Find the position of the operator using simple check. This will need to be updated for both PEMDAS and multiple operands
-        size_t pos = input.find_first_of("+-*/%^");
-        if (pos != string::npos) {
-            operation = input[pos];
+  //      size_t pos = input.find_first_of("+-*/%^");
+  //      if (pos != string::npos) {
+  //          operation = input[pos];
             
             // Separate the operands
-            operand1Str = input.substr(0, pos);
-            operand2Str = input.substr(pos + 1);
+  //          operand1Str = input.substr(0, pos);
+  //          operand2Str = input.substr(pos + 1);
 
-            try {
+  //          try {
                 // Check if the operands are variables and substitute their values
-                if (variables.find(operand1Str) != variables.end()) {
-                    operand1 = variables[operand1Str];
-                } else {
-                    operand1 = stod(operand1Str);
-                }
+  //              if (variables.find(operand1Str) != variables.end()) {
+  //                  operand1 = variables[operand1Str];
+  //              } else {
+  //                  operand1 = stod(operand1Str);
+  //              }
 
-                if (variables.find(operand2Str) != variables.end()) {
-                    operand2 = variables[operand2Str];
-                } else {
-                    operand2 = stod(operand2Str);
-                }
+  //              if (variables.find(operand2Str) != variables.end()) {
+  //                  operand2 = variables[operand2Str];
+  //              } else {
+  //                  operand2 = stod(operand2Str);
+  //              }
             
         // } else {
-            } catch (const exception& e) {
-            cerr << "Invalid input format: " << input << endl;
-            continue;
-            }
-        }
+  //          } catch (const exception& e) {
+  //          cerr << "Invalid input format: " << input << endl;
+  //          continue;
+  //          }
+  //      }
 
+        //parse input
+        Parser *p = nullptr; //create parser instance
+        std::queue<std::string> q = p->parse(input); //parse input
+
+        //int still_to_calculate = 1; //used to determine if there is still input to calculate
+        //Calculation* calculator = nullptr; //create instance of Calculation
+
+        //while (still_to_calculate){
+            
+        //}
 
         // create calculator instance to overload and process function of found operand
 
