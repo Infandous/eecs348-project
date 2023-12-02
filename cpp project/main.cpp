@@ -106,7 +106,7 @@ int main() {
 
         //parse input
         Parser *p = nullptr; //create parser instance
-        std::queue<std::string> q = p->parse(input); //parse input
+        std::queue<std::string> q = p->parse(input,variables); //parse input
 
         //int still_to_calculate = 1; //used to determine if there is still input to calculate
         //Calculation* calculator = nullptr; //create instance of Calculation
