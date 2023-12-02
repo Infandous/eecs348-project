@@ -9,6 +9,7 @@
 #include "multiply.cpp"
 #include "divide.cpp"
 #include "mod.cpp"
+#include "exp.cpp"
 
 using namespace std;
 
@@ -31,7 +32,7 @@ int main() {
             break;
         // help code to get this little prompt. adjust to your liking.
         } else if (input == "help") {
-            cout << "Supported operations: +, -, *, /, % (modulus)" << endl;
+            cout << "Supported operations: +, -, *, /, % (modulus), ^ or ** (exponentiation)" << endl;
             cout << "You can also assign variables using character=number. Ex: A=12" << endl;
             cout << endl;
             continue;
@@ -72,7 +73,7 @@ int main() {
         string operand1Str, operand2Str;
 
         // Find the position of the operator using simple check. This will need to be updated for both PEMDAS and multiple operands
-        size_t pos = input.find_first_of("+-*/%");
+        size_t pos = input.find_first_of("+-*/%^");
         if (pos != string::npos) {
             operation = input[pos];
 
@@ -102,25 +103,32 @@ int main() {
 
         Calculation* calculator = nullptr;
 
-        switch (operation) {
-            case '+':
-                calculator = new Addition();
-                break;
-            case '-':
-                calculator = new Subtraction();
-                break;
-            case '*':
-                calculator = new Multiplication();
-                break;
-            case '/':
-                calculator = new Division();
-                break;
-            case '%':
-                calculator = new Modulus();
-                break;
-            default:
-                cerr << "Invalid operation! Enter 'help' for supported operations." << endl;
-                continue;
+        if (operation == '^' || (input.find("**") != string::npos)) {
+            calculator = new Exp();
+        } else {
+            switch (operation) {
+                case '+':
+                    calculator = new Addition();
+                    break;
+                case '-':
+                    calculator = new Subtraction();
+                    break;
+                case '*':
+                    calculator = new Multiplication();
+                    break;
+                case '/':
+                    calculator = new Division();
+                    break;
+                case '%':
+                    calculator = new Modulus();
+                    break;
+                case '^':
+                    calculator = new Exp();
+                    break;
+                default:
+                    cerr << "Invalid operation! Enter 'help' for supported operations." << endl;
+                    continue;
+            }
         }
 
         // parse expression here with each operand. This will need to be updated with tokens or a more robust parser to allow more than one result.
