@@ -11,7 +11,7 @@
 #include "divide.cpp"
 #include "mod.cpp"
 #include "exp.cpp"
-#include "parse.cpp"
+#include "tokenize.cpp"
 
 using namespace std;
 
@@ -105,15 +105,15 @@ int main() {
   //      }
 
         //parse input
-        Parser *p = nullptr; //create parser instance
-        std::queue<std::string> q = p->parse(input,variables); //parse input
+        Tokenizer *t = nullptr; //create parser instance
+        std::queue<std::string> q = t->tokenize(input,variables); //parse input
 
-        //int still_to_calculate = 1; //used to determine if there is still input to calculate
-        //Calculation* calculator = nullptr; //create instance of Calculation
+        int still_to_calculate = 1; //used to determine if there is still input to calculate
+        Calculation* calculator = nullptr; //create instance of Calculation
 
-        //while (still_to_calculate){
+        while (still_to_calculate){
             
-        //}
+        }
 
         // create calculator instance to overload and process function of found operand
 
