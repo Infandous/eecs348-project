@@ -76,26 +76,30 @@ int main() {
         size_t pos = input.find_first_of("+-*/%^");
         if (pos != string::npos) {
             operation = input[pos];
-
+            
             // Separate the operands
             operand1Str = input.substr(0, pos);
             operand2Str = input.substr(pos + 1);
 
-            // Check if the operands are variables and substitute their values
-            if (variables.find(operand1Str) != variables.end()) {
-                operand1 = variables[operand1Str];
-            } else {
-                operand1 = stod(operand1Str);
-            }
+            try {
+                // Check if the operands are variables and substitute their values
+                if (variables.find(operand1Str) != variables.end()) {
+                    operand1 = variables[operand1Str];
+                } else {
+                    operand1 = stod(operand1Str);
+                }
 
-            if (variables.find(operand2Str) != variables.end()) {
-                operand2 = variables[operand2Str];
-            } else {
-                operand2 = stod(operand2Str);
-            }
-        } else {
+                if (variables.find(operand2Str) != variables.end()) {
+                    operand2 = variables[operand2Str];
+                } else {
+                    operand2 = stod(operand2Str);
+                }
+            
+        // } else {
+            } catch (const exception& e) {
             cerr << "Invalid input format: " << input << endl;
             continue;
+            }
         }
 
 
