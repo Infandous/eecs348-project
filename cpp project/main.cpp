@@ -3,8 +3,12 @@
 #include <cmath>
 #include <unordered_map>
 #include <cctype>
+#include <stdexcept>
+#include <limits>
 
 using namespace std;
+
+const double NaN = numeric_limits<double>::quiet_NaN();
 
 bool isOperator(char c) {
     return c == '+' || c == '-' || c == '*' || c == '/' || c == '^' || c == '%' || c == '*';
@@ -27,18 +31,14 @@ double applyOperator(char op, double operand1, double operand2, bool& error) {
             if (operand2 != 0) {
                 return operand1 / operand2;
             } else {
-                cerr << "Error: Division by zero." << endl;
-                error = true;
-                return 0;
+                throw runtime_error("Error: Division by zero.");    
             }
         case '^': return pow(operand1, operand2);
         case '%':
             if (operand2 != 0) {
                 return fmod(operand1, operand2);
             } else {
-                cerr << "Error: Modulo by zero." << endl;
-                error = true;
-                return 0;
+                throw runtime_error("Error: Modulo by zero.");
             }
         default: return 0;
     }
@@ -86,20 +86,27 @@ bool isValidExpression(const string& expression) {
         } else if (c == ')') {
             parenCount--;
             if (parenCount < 0) {
-                return false;  // Unmatched closing parenthesis
+                throw runtime_error("Error: Unmatched closing parenthesis.");
             }
         }
     }
+
+    if (parenCount > 0) {
+        throw runtime_error("Error: Unmatched opening parenthesis.");
+    }
+    
     return parenCount == 0;  // All parentheses are matched
 }
 
 double evaluateExpression(const string& expression, unordered_map<string, double>& variables) {
+
     stack<char> operators;
     stack<double> operands;
 
+    try {
+
     if (!isValidExpression(expression)) {
-        cerr << "Error: Invalid expression. Unmatched parentheses." << endl;
-        return 0;
+        throw runtime_error("Error: Invalid expression. Unmatched parentheses.");
     }
 
     for (size_t i = 0; i < expression.size(); ++i) {
@@ -121,6 +128,13 @@ double evaluateExpression(const string& expression, unordered_map<string, double
             }
             string var_name = expression.substr(i, j - i);
             i = j - 1;
+            // double num = stod(num_str);
+            // try {
+            //     double num = stod(num_str);
+            //     operands.push(num);
+            // } catch (const invalid_argument& e) {
+            //     throw runtime_error("Error: Invalid number format.");
+            // }
 
             // Remove whitespace from the variable name
             string cleaned_var_name = removeWhitespace(var_name);
@@ -181,8 +195,7 @@ double evaluateExpression(const string& expression, unordered_map<string, double
                 operators.push(expression[i]);
             }
         } else {
-            cerr << "Error: Invalid character in expression." << endl;
-            return 0;
+            throw runtime_error("Error: Invalid character in expression.");
         }
     }
 
@@ -201,8 +214,12 @@ double evaluateExpression(const string& expression, unordered_map<string, double
     }
 
     if (operands.size() != 1 || !operators.empty()) {
-        cerr << "Error: Invalid expression." << endl;
-        return 0;
+        throw runtime_error("Error: Invalid expression.");
+    }
+
+    } catch (const runtime_error& e) {
+        cerr << e.what() << endl;
+        return NaN;
     }
 
     return operands.top();
@@ -212,12 +229,20 @@ int main() {
     string input;
     unordered_map<string, double> variables;
 
+
+    cout << "-=-=-=-=- Enter expression (e.g., A=2, A + 3), 'help' for menu, or 'exit' to quit -=-=-=-=-" << endl;
     while (true) {
-        cout << "Enter expression or variable assignment (or 'exit' to quit): ";
+        cout << "Input: ";
         getline(cin, input);
 
         if (input == "exit") {
+            cout << "Exiting calculator. Goodbye!" << endl;
             break;
+        } else if (input == "help") {
+            cout << "Supported operations: +, -, *, /, % (modulus), ^ (exponentiation)" << endl;
+            cout << "You can also assign variables using character=number. Ex: A=12 (which is case sensitive)" << endl;
+            cout << endl;
+            continue;
         }
 
         size_t assignmentPos = input.find('=');
@@ -250,7 +275,7 @@ int main() {
         } else {
             // Expression evaluation
             double result = evaluateExpression(input, variables);
-            if (result != 0) {
+            if (!isnan(result)) {
                 cout << "Result: " << result << endl;
             }
         }
