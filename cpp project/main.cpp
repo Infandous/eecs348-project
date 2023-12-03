@@ -1,8 +1,12 @@
-// main.cpp
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <map>  // Include the <map> header for variable storage
+#include <map>
+#include <cmath>
+#include <cctype>
+#include <stack>
+#include <vector>
+#include <memory>  // Add this line for std::unique_ptr
 #include "calculation.h"
 #include "add.cpp"
 #include "subtract.cpp"
@@ -13,24 +17,147 @@
 
 using namespace std;
 
+class ExpressionParser {
+private:
+    std::map<char, std::unique_ptr<Calculation>> operators;
+    std::map<std::string, double> variables;
+
+public:
+    ExpressionParser() {
+        initializeOperators();
+    }
+
+    void initializeOperators() {
+        operators['+'] = std::unique_ptr<Calculation>(new Addition());
+        operators['-'] = std::unique_ptr<Calculation>(new Subtraction());
+        operators['*'] = std::unique_ptr<Calculation>(new Multiplication());
+        operators['/'] = std::unique_ptr<Calculation>(new Division());
+        operators['%'] = std::unique_ptr<Calculation>(new Modulus());
+        operators['^'] = std::unique_ptr<Calculation>(new Exp());
+    }
+
+    double parseExpression(const std::string& expression) {
+        std::istringstream stream(expression);
+        return parseExpression(stream);
+    }
+
+    double parseExpression(std::istringstream& stream) {
+        std::stack<double> values;
+        std::stack<char> ops;
+
+        while (!stream.eof()) {
+            if (isdigit(stream.peek()) || stream.peek() == '.') {
+                double value;
+                stream >> value;
+                values.push(value);
+            } else if (isalpha(stream.peek())) {
+                std::string variableName;
+                stream >> variableName;
+
+                auto it = variables.find(variableName);
+                if (it != variables.end()) {
+                    values.push(it->second);
+                } else {
+                    throw std::invalid_argument("Undefined variable: " + variableName);
+                }
+            } else if (stream.peek() == '(') {
+                stream.ignore();  // Consume '('
+                values.push(parseExpression(stream));
+                stream.ignore();  // Consume ')'
+            } else if (isOperator(stream.peek())) {
+                char op;
+                stream >> op;
+
+                while (!ops.empty() && hasHigherPrecedence(ops.top(), op)) {
+                    applyOperation(values, ops);
+                }
+
+                ops.push(op);
+            } else {
+                stream.ignore();  // Ignore unexpected characters
+            }
+        }
+
+        while (!ops.empty()) {
+            applyOperation(values, ops);
+        }
+
+        if (values.size() == 1 && ops.empty()) {
+            return values.top();
+        } else {
+            throw std::invalid_argument("Invalid expression");
+        }
+    }
+
+    bool isOperator(char op) {
+        return operators.find(op) != operators.end();
+    }
+
+    int getPrecedence(char op) {
+        switch (op) {
+            case '^':
+                return 3;
+            case '*':
+            case '/':
+            case '%':
+                return 2;
+            case '+':
+            case '-':
+                return 1;
+            default:
+                return 0;
+        }
+    }
+
+    bool hasHigherPrecedence(char op1, char op2) {
+        return getPrecedence(op1) >= getPrecedence(op2);
+    }
+
+    void applyOperation(std::stack<double>& values, std::stack<char>& ops) {
+        if (values.size() < 2 || ops.empty()) {
+            throw std::invalid_argument("Invalid expression");
+        }
+
+        double b = values.top();
+        values.pop();
+        double a = values.top();
+        values.pop();
+        char op = ops.top();
+        ops.pop();
+
+        auto it = operators.find(op);
+        if (it != operators.end()) {
+            double result = it->second->calculate(a, b);
+            values.push(result);
+        } else {
+            throw std::invalid_argument("Invalid operator: " + std::string(1, op));
+        }
+    }
+
+    void assignVariable(const std::string& variable, double value) {
+        variables[variable] = value;
+    }
+
+    void printVariableTable() const {
+        std::cout << "Variable Table:" << std::endl;
+        for (const auto& pair : variables) {
+            std::cout << pair.first << " = " << pair.second << std::endl;
+        }
+    }
+};
+
 int main() {
-    string input;
-    double operand1, operand2;
-    char operation;
+    ExpressionParser parser;  // Initialize the expression parser
 
-    map<std::string, double> variables;  // Map to store variables
-
-    // intro line. adjust to your liking.
     cout << "-=-=-=-=- Enter expression (e.g., A=2, A + 3), 'help' for menu, or 'exit' to terminate -=-=-=-=-" << endl;
     while (true) {
         cout << "Input: ";
-        cin >> input;
+        string input;
+        getline(cin, input);
 
-        // exit code to end program
         if (input == "exit") {
             cout << "Exiting calculator. Goodbye!" << endl;
             break;
-        // help code to get this little prompt. adjust to your liking.
         } else if (input == "help") {
             cout << "Supported operations: +, -, *, /, % (modulus), ^ or ** (exponentiation)" << endl;
             cout << "You can also assign variables using character=number. Ex: A=12" << endl;
@@ -38,114 +165,12 @@ int main() {
             continue;
         }
 
-        // Check if the input contains '=' for variable assignment
-        size_t assignmentPos = input.find('=');
-        if (assignmentPos != string::npos) {
-            // Variable assignment
-            string variableName = input.substr(0, assignmentPos);
-
-            // Check if the variable name contains only alphabetic characters
-            if (variableName.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") != string::npos) {
-                cerr << "Invalid variable name: " << variableName << endl;
-                continue;
-            }
-
-            string valueStr = input.substr(assignmentPos + 1);
-
-            // Convert the value to a double
-            double value;
-            try {
-                value = stod(valueStr);
-            } catch (const invalid_argument& e) {
-                cerr << "Invalid value for variable assignment: " << valueStr << endl;
-                continue;
-            }
-
-            // Store the variable in the map
-            variables[variableName] = value;
-            cout << "Variable " << variableName << " assigned the value " << value << endl;
-
-            continue;  // Skip the rest of the loop and ask for another input
-        }
-
-        // Parse the input for calculation
-        char operation;
-        string operand1Str, operand2Str;
-
-        // Find the position of the operator using simple check. This will need to be updated for both PEMDAS and multiple operands
-        size_t pos = input.find_first_of("+-*/%^");
-        if (pos != string::npos) {
-            operation = input[pos];
-            
-            // Separate the operands
-            operand1Str = input.substr(0, pos);
-            operand2Str = input.substr(pos + 1);
-
-            try {
-                // Check if the operands are variables and substitute their values
-                if (variables.find(operand1Str) != variables.end()) {
-                    operand1 = variables[operand1Str];
-                } else {
-                    operand1 = stod(operand1Str);
-                }
-
-                if (variables.find(operand2Str) != variables.end()) {
-                    operand2 = variables[operand2Str];
-                } else {
-                    operand2 = stod(operand2Str);
-                }
-            
-        // } else {
-            } catch (const exception& e) {
-            cerr << "Invalid input format: " << input << endl;
-            continue;
-            }
-        }
-
-
-        // create calculator instance to overload and process function of found operand
-
-        Calculation* calculator = nullptr;
-
-        if (operation == '^' || (input.find("**") != string::npos)) {
-            calculator = new Exp();
-        } else {
-            switch (operation) {
-                case '+':
-                    calculator = new Addition();
-                    break;
-                case '-':
-                    calculator = new Subtraction();
-                    break;
-                case '*':
-                    calculator = new Multiplication();
-                    break;
-                case '/':
-                    calculator = new Division();
-                    break;
-                case '%':
-                    calculator = new Modulus();
-                    break;
-                case '^':
-                    calculator = new Exp();
-                    break;
-                default:
-                    cerr << "Invalid operation! Enter 'help' for supported operations." << endl;
-                    continue;
-            }
-        }
-
-        // parse expression here with each operand. This will need to be updated with tokens or a more robust parser to allow more than one result.
-        if (calculator) {
-            double result = calculator->calculate(operand1, operand2);
+        try {
+            double result = parser.parseExpression(input);
             cout << "Result: " << result << endl;
-            delete calculator;
-        }
-
-        // Print the variable table for debugging. this will be deleted in final product (unless you guys like it)
-        cout << "Variable Table:" << endl;
-        for (const auto& pair : variables) {
-            cout << pair.first << " = " << pair.second << endl;
+            parser.printVariableTable();
+        } catch (const exception& e) {
+            cerr << "Error: " << e.what() << endl;
         }
     }
 
