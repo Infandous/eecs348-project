@@ -14,7 +14,7 @@ TARGET = calculator
 
 # Rule to build the target
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $(BUILD_DIR)/$(TARGET) $(OBJS)
+	$(CC) $(CFLAGS) -g -o $(BUILD_DIR)/$(TARGET) $(OBJS)
 
 # Rule to build object files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp

@@ -12,6 +12,7 @@
 #include "mod.cpp"
 #include "exp.cpp"
 #include "tokenize.cpp"
+#include "parse.cpp"
 
 using namespace std;
 
@@ -26,7 +27,8 @@ int main() {
     cout << "-=-=-=-=- Enter expression (e.g., A=2, A + 3), 'help' for menu, or 'exit' to terminate -=-=-=-=-" << endl;
     while (true) {
         cout << "Input: ";
-        cin >> input;
+        //cin >> input;
+        getline(cin,input);
 
         // exit code to end program
         if (input == "exit") {
@@ -70,89 +72,17 @@ int main() {
             continue;  // Skip the rest of the loop and ask for another input
         }
 
-        // Parse the input for calculation
-       /* char operation;
-        string operand1Str, operand2Str;
-*/
-        // Find the position of the operator using simple check. This will need to be updated for both PEMDAS and multiple operands
-  //      size_t pos = input.find_first_of("+-*/%^");
-  //      if (pos != string::npos) {
-  //          operation = input[pos];
-            
-            // Separate the operands
-  //          operand1Str = input.substr(0, pos);
-  //          operand2Str = input.substr(pos + 1);
 
-  //          try {
-                // Check if the operands are variables and substitute their values
-  //              if (variables.find(operand1Str) != variables.end()) {
-  //                  operand1 = variables[operand1Str];
-  //              } else {
-  //                  operand1 = stod(operand1Str);
-  //              }
-
-  //              if (variables.find(operand2Str) != variables.end()) {
-  //                  operand2 = variables[operand2Str];
-  //              } else {
-  //                  operand2 = stod(operand2Str);
-  //              }
-            
-        // } else {
-  //          } catch (const exception& e) {
-  //          cerr << "Invalid input format: " << input << endl;
-  //          continue;
-  //          }
-  //      }
-
+        //tokenize input
+        Tokenizer t; //create parser instance
+        std::queue<std::string> q = t.tokenize(input,variables); //parse input
+        
         //parse input
-        Tokenizer *t = nullptr; //create parser instance
-        std::queue<std::string> q = t->tokenize(input,variables); //parse input
+        Parser parser; //create parser object
+        Parser::ASTNode *root = parser.parseExpression(q); //parse the expression to create AST tree
 
-        int still_to_calculate = 1; //used to determine if there is still input to calculate
-        Calculation* calculator = nullptr; //create instance of Calculation
-
-        while (still_to_calculate){
-            
-        }
-
-        // create calculator instance to overload and process function of found operand
-
-        Calculation* calculator = nullptr;
-
-        if (operation == '^' || (input.find("**") != string::npos)) {
-            calculator = new Exp();
-        } else {
-            switch (operation) {
-                case '+':
-                    calculator = new Addition();
-                    break;
-                case '-':
-                    calculator = new Subtraction();
-                    break;
-                case '*':
-                    calculator = new Multiplication();
-                    break;
-                case '/':
-                    calculator = new Division();
-                    break;
-                case '%':
-                    calculator = new Modulus();
-                    break;
-                case '^':
-                    calculator = new Exp();
-                    break;
-                default:
-                    cerr << "Invalid operation! Enter 'help' for supported operations." << endl;
-                    continue;
-            }
-        }
-
-        // parse expression here with each operand. This will need to be updated with tokens or a more robust parser to allow more than one result.
-        if (calculator) {
-            double result = calculator->calculate(operand1, operand2);
-            cout << "Result: " << result << endl;
-            delete calculator;
-        }
+        double result = parser.evaluate(root); //evaluate the expression
+        cout<<"Result: "<<result<<std::endl;
 
         // Print the variable table for debugging. this will be deleted in final product (unless you guys like it)
         cout << "Variable Table:" << endl;
