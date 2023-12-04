@@ -155,28 +155,40 @@ double evaluateExpression(const string& expression, unordered_map<string, double
             operators.push('^');  // Treat "**" as exponentiation
             ++i;  // Skip the second '*' character
         } else if (isOperator(expression[i])) {
-            // Handle unary minus
-            if ((expression[i] == '-' || expression[i] == '+') && (i == 0 || expression[i - 1] == '(' || isOperator(expression[i - 1]))) {
-                int j = i + 1;
-                while (j < expression.size() && (isdigit(expression[j]) || expression[j] == '.')) {
-                    ++j;
-                }
-                string num_str = expression.substr(i, j - i);
-                i = j - 1;
-                double num = stod(num_str);
-                operands.push(num);
-            } else {
-                while (!operators.empty() && getPrecedence(operators.top()) >= getPrecedence(expression[i])) {
-                    double operand2 = operands.top();
-                    operands.pop();
-                    double operand1 = operands.top();
-                    operands.pop();
-                    char op = operators.top();
-                    operators.pop();
-                    operands.push(applyOperator(op, operand1, operand2));
-                }
-                operators.push(expression[i]);
-            }
+    // Handle unary minus
+    if ((expression[i] == '-' || expression[i] == '+') && (i == 0 || expression[i - 1] == '(' || isOperator(expression[i - 1]))) {
+        int j = i + 1;
+        while (j < expression.size() && (isdigit(expression[j]) || expression[j] == '.')) {
+            ++j;
+        }
+        string num_str = expression.substr(i, j - i);
+        i = j - 1;
+        double num = stod(num_str);
+        operands.push(num);
+    } else {
+        // Check for missing operand on the left
+        if (i == 0 || expression[i - 1] == '(' || isOperator(expression[i - 1])) {
+            throw runtime_error("Error: Missing operand on the left of operator.");
+        }
+
+        while (!operators.empty() && getPrecedence(operators.top()) >= getPrecedence(expression[i])) {
+            double operand2 = operands.top();
+            operands.pop();
+            double operand1 = operands.top();
+            operands.pop();
+            char op = operators.top();
+            operators.pop();
+            operands.push(applyOperator(op, operand1, operand2));
+        }
+
+        operators.push(expression[i]);
+
+        // Check for missing operand on the right
+        size_t j = i + 1;
+        if (j == expression.size() || expression[j] == ')' || isOperator(expression[j])) {
+            throw runtime_error("Error: Missing operand on the right of operator.");
+        }
+    }
         } else {
             throw runtime_error("Error: Invalid character in expression.");
         }
