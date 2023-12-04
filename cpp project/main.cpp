@@ -21,8 +21,7 @@ int getPrecedence(char op) {
     return 0;  // Parentheses
 }
 
-double applyOperator(char op, double operand1, double operand2, bool& error) {
-    error = false;
+double applyOperator(char op, double operand1, double operand2) {
     switch (op) {
         case '+': return operand1 + operand2;
         case '-': return operand1 - operand2;
@@ -128,13 +127,6 @@ double evaluateExpression(const string& expression, unordered_map<string, double
             }
             string var_name = expression.substr(i, j - i);
             i = j - 1;
-            // double num = stod(num_str);
-            // try {
-            //     double num = stod(num_str);
-            //     operands.push(num);
-            // } catch (const invalid_argument& e) {
-            //     throw runtime_error("Error: Invalid number format.");
-            // }
 
             // Remove whitespace from the variable name
             string cleaned_var_name = removeWhitespace(var_name);
@@ -144,8 +136,7 @@ double evaluateExpression(const string& expression, unordered_map<string, double
             } else if (variables.find(cleaned_var_name) != variables.end()) {
                 operands.push(variables[cleaned_var_name]);
             } else {
-                cerr << "Error: Variable '" << cleaned_var_name << "' not defined." << endl;
-                return 0;
+                throw runtime_error("Error: Variable '" + cleaned_var_name + "' not defined.");
             }
         } else if (expression[i] == '(') {
             operators.push('(');
@@ -157,11 +148,7 @@ double evaluateExpression(const string& expression, unordered_map<string, double
                 operands.pop();
                 char op = operators.top();
                 operators.pop();
-                bool error;
-                operands.push(applyOperator(op, operand1, operand2, error));
-                if (error) {
-                    return 0;
-                }
+                operands.push(applyOperator(op, operand1, operand2));
             }
             operators.pop();  // Pop '('
         } else if (expression[i] == '*' && expression[i + 1] == '*') {
@@ -186,11 +173,7 @@ double evaluateExpression(const string& expression, unordered_map<string, double
                     operands.pop();
                     char op = operators.top();
                     operators.pop();
-                    bool error;
-                    operands.push(applyOperator(op, operand1, operand2, error));
-                    if (error) {
-                        return 0;
-                    }
+                    operands.push(applyOperator(op, operand1, operand2));
                 }
                 operators.push(expression[i]);
             }
@@ -206,11 +189,7 @@ double evaluateExpression(const string& expression, unordered_map<string, double
         operands.pop();
         char op = operators.top();
         operators.pop();
-        bool error;
-        operands.push(applyOperator(op, operand1, operand2, error));
-        if (error) {
-            return 0;
-        }
+        operands.push(applyOperator(op, operand1, operand2));
     }
 
     if (operands.size() != 1 || !operators.empty()) {
@@ -219,6 +198,8 @@ double evaluateExpression(const string& expression, unordered_map<string, double
 
     } catch (const runtime_error& e) {
         cerr << e.what() << endl;
+        while (!operators.empty()) operators.pop();
+        while (!operands.empty()) operands.pop();
         return NaN;
     }
 
