@@ -157,14 +157,14 @@ double evaluateExpression(const string& expression, unordered_map<string, double
         } else if (isOperator(expression[i])) {
     // Handle unary minus
     if ((expression[i] == '-' || expression[i] == '+') && (i == 0 || expression[i - 1] == '(' || isOperator(expression[i - 1]))) {
-        int j = i + 1;
-        while (j < expression.size() && (isdigit(expression[j]) || expression[j] == '.')) {
-            ++j;
+        if (expression[i] == '+'){
+            continue;
         }
-        string num_str = expression.substr(i, j - i);
-        i = j - 1;
-        double num = stod(num_str);
-        operands.push(num);
+        // Push unary minus as multiplication by -1
+        else{
+        operators.push('*');
+        operands.push(-1.0);
+        }
     } else {
         // Check for missing operand on the left
         if (i == 0 || expression[i - 1] == '(' || isOperator(expression[i - 1])) {
@@ -195,14 +195,20 @@ double evaluateExpression(const string& expression, unordered_map<string, double
     }
 
     while (!operators.empty()) {
-        double operand2 = operands.top();
-        operands.pop();
-        double operand1 = operands.top();
-        operands.pop();
-        char op = operators.top();
-        operators.pop();
+    double operand2 = operands.top();
+    operands.pop();
+    double operand1 = operands.top();
+    operands.pop();
+    char op = operators.top();
+    operators.pop();
+
+    // Check for unary minus
+    if (op == '*' && operand1 == -1.0) {
+        operands.push(-operand2);  // Apply unary minus
+    } else {
         operands.push(applyOperator(op, operand1, operand2));
     }
+}
 
     if (operands.size() != 1 || !operators.empty()) {
         throw runtime_error("Error: Invalid expression.");
