@@ -1,151 +1,282 @@
-// main.cpp
 #include <iostream>
-#include <sstream>
-#include <string>
-#include <map>  // Include the <map> header for variable storage
-#include "calculation.h"
-#include "add.cpp"
-#include "subtract.cpp"
-#include "multiply.cpp"
-#include "divide.cpp"
-#include "mod.cpp"
-#include "exp.cpp"
+#include <stack>
+#include <cmath>
+#include <unordered_map>
+#include <cctype>
+#include <stdexcept>
+#include <limits>
 
 using namespace std;
 
+const double NaN = numeric_limits<double>::quiet_NaN();
+
+bool isOperator(char c) {
+    return c == '+' || c == '-' || c == '*' || c == '/' || c == '^' || c == '%' || c == '*';
+}
+
+int getPrecedence(char op) {
+    if (op == '+' || op == '-') return 1;
+    if (op == '*' || op == '/' || op == '%') return 2;
+    if (op == '^') return 3;
+    return 0;  // Parentheses
+}
+
+double applyOperator(char op, double operand1, double operand2) {
+    switch (op) {
+        case '+': return operand1 + operand2;
+        case '-': return operand1 - operand2;
+        case '*': return operand1 * operand2;
+        case '/':
+            if (operand2 != 0) {
+                return operand1 / operand2;
+            } else {
+                throw runtime_error("Error: Division by zero.");    
+            }
+        case '^': return pow(operand1, operand2);
+        case '%':
+            if (operand2 != 0) {
+                return fmod(operand1, operand2);
+            } else {
+                throw runtime_error("Error: Modulo by zero.");
+            }
+        default: return 0;
+    }
+}
+
+string removeWhitespace(const string& str) {
+    string result;
+    for (char c : str) {
+        if (!isspace(c)) {
+            result += c;
+        }
+    }
+    return result;
+}
+
+bool isValidVariableName(const string& var_name) {
+    // Remove whitespace from the variable name
+    string cleaned_var_name = removeWhitespace(var_name);
+
+    // Check if the variable name is non-empty
+    if (cleaned_var_name.empty()) {
+        return false;
+    }
+
+    // Check if the first character is a letter or underscore
+    if (!isalpha(cleaned_var_name[0]) && cleaned_var_name[0] != '_') {
+        return false;
+    }
+
+    // Check if the rest of the characters are alphanumeric or underscores
+    for (size_t i = 1; i < cleaned_var_name.size(); ++i) {
+        if (!isalnum(cleaned_var_name[i]) && cleaned_var_name[i] != '_') {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool isValidExpression(const string& expression) {
+    int parenCount = 0;
+    for (char c : expression) {
+        if (c == '(') {
+            parenCount++;
+        } else if (c == ')') {
+            parenCount--;
+            if (parenCount < 0) {
+                throw runtime_error("Error: Unmatched closing parenthesis.");
+            }
+        }
+    }
+
+    if (parenCount > 0) {
+        throw runtime_error("Error: Unmatched opening parenthesis.");
+    }
+    
+    return parenCount == 0;  // All parentheses are matched
+}
+
+double evaluateExpression(const string& expression, unordered_map<string, double>& variables) {
+
+    stack<char> operators;
+    stack<double> operands;
+
+    try {
+
+    if (!isValidExpression(expression)) {
+        throw runtime_error("Error: Invalid expression. Unmatched parentheses.");
+    }
+
+    for (size_t i = 0; i < expression.size(); ++i) {
+        if (isspace(expression[i])) {
+            continue;
+        } else if (isdigit(expression[i]) || expression[i] == '.') {
+            size_t j = i;
+            while (j < expression.size() && (isdigit(expression[j]) || expression[j] == '.')) {
+                ++j;
+            }
+            string num_str = expression.substr(i, j - i);
+            i = j - 1;
+            double num = stod(num_str);
+            operands.push(num);
+        } else if (isalpha(expression[i])) {
+            size_t j = i;
+            while (j < expression.size() && (isalnum(expression[j]) || expression[j] == '_')) {
+                ++j;
+            }
+            string var_name = expression.substr(i, j - i);
+            i = j - 1;
+
+            // Remove whitespace from the variable name
+            string cleaned_var_name = removeWhitespace(var_name);
+
+            if (cleaned_var_name == "pi" || cleaned_var_name == "e") {
+                operands.push((cleaned_var_name == "pi") ? M_PI : M_E);
+            } else if (variables.find(cleaned_var_name) != variables.end()) {
+                operands.push(variables[cleaned_var_name]);
+            } else {
+                throw runtime_error("Error: Variable '" + cleaned_var_name + "' not defined.");
+            }
+        } else if (expression[i] == '(') {
+            operators.push('(');
+        } else if (expression[i] == ')') {
+            while (!operators.empty() && operators.top() != '(') {
+                double operand2 = operands.top();
+                operands.pop();
+                double operand1 = operands.top();
+                operands.pop();
+                char op = operators.top();
+                operators.pop();
+                operands.push(applyOperator(op, operand1, operand2));
+            }
+            operators.pop();  // Pop '('
+        } else if (expression[i] == '*' && expression[i + 1] == '*') {
+            operators.push('^');  // Treat "**" as exponentiation
+            ++i;  // Skip the second '*' character
+        } else if (isOperator(expression[i])) {
+    // Handle unary minus
+    if ((expression[i] == '-' || expression[i] == '+') && (i == 0 || expression[i - 1] == '(' || isOperator(expression[i - 1]))) {
+        if (expression[i] == '+'){
+            continue;
+        }
+        // Push unary minus as multiplication by -1
+        else{
+        operators.push('*');
+        operands.push(-1.0);
+        }
+    } else {
+        // Check for missing operand on the left
+        if (i == 0 || expression[i - 1] == '(' || isOperator(expression[i - 1])) {
+            throw runtime_error("Error: Missing operand on the left of operator.");
+        }
+
+        while (!operators.empty() && getPrecedence(operators.top()) >= getPrecedence(expression[i])) {
+            double operand2 = operands.top();
+            operands.pop();
+            double operand1 = operands.top();
+            operands.pop();
+            char op = operators.top();
+            operators.pop();
+            operands.push(applyOperator(op, operand1, operand2));
+        }
+
+        operators.push(expression[i]);
+
+        // Check for missing operand on the right
+        size_t j = i + 1;
+        if (j == expression.size() || expression[j] == ')' || isOperator(expression[j])) {
+            throw runtime_error("Error: Missing operand on the right of operator.");
+        }
+    }
+        } else {
+            throw runtime_error("Error: Invalid character in expression.");
+        }
+    }
+
+    while (!operators.empty()) {
+    double operand2 = operands.top();
+    operands.pop();
+    double operand1 = operands.top();
+    operands.pop();
+    char op = operators.top();
+    operators.pop();
+
+    // Check for unary minus
+    if (op == '*' && operand1 == -1.0) {
+        operands.push(-operand2);  // Apply unary minus
+    } else {
+        operands.push(applyOperator(op, operand1, operand2));
+    }
+}
+
+    if (operands.size() != 1 || !operators.empty()) {
+        throw runtime_error("Error: Invalid expression.");
+    }
+
+    } catch (const runtime_error& e) {
+        cerr << e.what() << endl;
+        while (!operators.empty()) operators.pop();
+        while (!operands.empty()) operands.pop();
+        return NaN;
+    }
+
+    return operands.top();
+}
+
 int main() {
     string input;
-    double operand1, operand2;
-    char operation;
+    unordered_map<string, double> variables;
 
-    map<std::string, double> variables;  // Map to store variables
 
-    // intro line. adjust to your liking.
-    cout << "-=-=-=-=- Enter expression (e.g., A=2, A + 3), 'help' for menu, or 'exit' to terminate -=-=-=-=-" << endl;
+    cout << "-=-=-=-=- Enter expression (e.g., A=2, A + 3), 'help' for menu, or 'exit' to quit -=-=-=-=-" << endl;
     while (true) {
         cout << "Input: ";
-        cin >> input;
+        getline(cin, input);
 
-        // exit code to end program
         if (input == "exit") {
             cout << "Exiting calculator. Goodbye!" << endl;
             break;
-        // help code to get this little prompt. adjust to your liking.
         } else if (input == "help") {
-            cout << "Supported operations: +, -, *, /, % (modulus), ^ or ** (exponentiation)" << endl;
-            cout << "You can also assign variables using character=number. Ex: A=12" << endl;
+            cout << "Supported operations: +, -, *, /, % (modulus), ^ (exponentiation)" << endl;
+            cout << "You can also assign variables using character=number. Ex: A=12 (which is case sensitive)" << endl;
             cout << endl;
             continue;
         }
 
-        // Check if the input contains '=' for variable assignment
         size_t assignmentPos = input.find('=');
+
         if (assignmentPos != string::npos) {
             // Variable assignment
-            string variableName = input.substr(0, assignmentPos);
+            string var_name = input.substr(0, assignmentPos);
+            string expression = input.substr(assignmentPos + 1);
 
-            // Check if the variable name contains only alphabetic characters
-            if (variableName.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") != string::npos) {
-                cerr << "Invalid variable name: " << variableName << endl;
-                continue;
-            }
+            // Remove whitespace from the variable name
+            string cleaned_var_name = removeWhitespace(var_name);
 
-            string valueStr = input.substr(assignmentPos + 1);
+            // Check if the variable name is valid
+            if (!isValidVariableName(cleaned_var_name)) {
+                cerr << "Error: Invalid variable name '" << var_name << "'." << endl;
+            } else if (cleaned_var_name == "pi" || cleaned_var_name == "e") {
+                cerr << "Error: Cannot assign to constant variable '" << cleaned_var_name << "'." << endl;
+            } else {
+                double result = evaluateExpression(expression, variables);
+                if (result != 0) {
+                    variables[cleaned_var_name] = result;
 
-            // Convert the value to a double
-            double value;
-            try {
-                value = stod(valueStr);
-            } catch (const invalid_argument& e) {
-                cerr << "Invalid value for variable assignment: " << valueStr << endl;
-                continue;
-            }
-
-            // Store the variable in the map
-            variables[variableName] = value;
-            cout << "Variable " << variableName << " assigned the value " << value << endl;
-
-            continue;  // Skip the rest of the loop and ask for another input
-        }
-
-        // Parse the input for calculation
-        char operation;
-        string operand1Str, operand2Str;
-
-        // Find the position of the operator using simple check. This will need to be updated for both PEMDAS and multiple operands
-        size_t pos = input.find_first_of("+-*/%^");
-        if (pos != string::npos) {
-            operation = input[pos];
-            
-            // Separate the operands
-            operand1Str = input.substr(0, pos);
-            operand2Str = input.substr(pos + 1);
-
-            try {
-                // Check if the operands are variables and substitute their values
-                if (variables.find(operand1Str) != variables.end()) {
-                    operand1 = variables[operand1Str];
-                } else {
-                    operand1 = stod(operand1Str);
+                    // Show current variable values
+                    cout << "Current variable values:" << endl;
+                    for (const auto& entry : variables) {
+                        cout << entry.first << " = " << entry.second << endl;
+                    }
                 }
-
-                if (variables.find(operand2Str) != variables.end()) {
-                    operand2 = variables[operand2Str];
-                } else {
-                    operand2 = stod(operand2Str);
-                }
-            
-        // } else {
-            } catch (const exception& e) {
-            cerr << "Invalid input format: " << input << endl;
-            continue;
             }
-        }
-
-
-        // create calculator instance to overload and process function of found operand
-
-        Calculation* calculator = nullptr;
-
-        if (operation == '^' || (input.find("**") != string::npos)) {
-            calculator = new Exp();
         } else {
-            switch (operation) {
-                case '+':
-                    calculator = new Addition();
-                    break;
-                case '-':
-                    calculator = new Subtraction();
-                    break;
-                case '*':
-                    calculator = new Multiplication();
-                    break;
-                case '/':
-                    calculator = new Division();
-                    break;
-                case '%':
-                    calculator = new Modulus();
-                    break;
-                case '^':
-                    calculator = new Exp();
-                    break;
-                default:
-                    cerr << "Invalid operation! Enter 'help' for supported operations." << endl;
-                    continue;
+            // Expression evaluation
+            double result = evaluateExpression(input, variables);
+            if (!isnan(result)) {
+                cout << "Result: " << result << endl;
             }
-        }
-
-        // parse expression here with each operand. This will need to be updated with tokens or a more robust parser to allow more than one result.
-        if (calculator) {
-            double result = calculator->calculate(operand1, operand2);
-            cout << "Result: " << result << endl;
-            delete calculator;
-        }
-
-        // Print the variable table for debugging. this will be deleted in final product (unless you guys like it)
-        cout << "Variable Table:" << endl;
-        for (const auto& pair : variables) {
-            cout << pair.first << " = " << pair.second << endl;
         }
     }
 

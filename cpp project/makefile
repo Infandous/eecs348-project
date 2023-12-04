@@ -1,25 +1,15 @@
-CC = g++
-CFLAGS = -std=c++11
-SRC_DIR = .
-BUILD_DIR = .
+# Makefile
 
-# List your source files here
-SRCS = $(wildcard $(SRC_DIR)/*.cpp)
+CXX = g++
+CXXFLAGS = -std=c++11 -g
 
-# Derive object file names from source file names
-OBJS = $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SRCS))
+all: calculator
 
-# The target binary
-TARGET = calculator
+calculator: main.o
+	$(CXX) $(CXXFLAGS) -o calculator main.o
 
-# Rule to build the target
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $(BUILD_DIR)/$(TARGET) $(OBJS)
+main.o: main.cpp
+	$(CXX) $(CXXFLAGS) -c main.cpp
 
-# Rule to build object files
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-# Clean rule
 clean:
-	rm -f $(BUILD_DIR)/$(TARGET) $(OBJS)
+	rm -f calculator main.o
