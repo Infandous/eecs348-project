@@ -8,12 +8,15 @@
 
 using namespace std;
 
+// Represent NaN as a constant value
 const double NaN = numeric_limits<double>::quiet_NaN();
 
+// Function to check if a character is an operator
 bool isOperator(char c) {
     return c == '+' || c == '-' || c == '*' || c == '/' || c == '^' || c == '%' || c == '*';
 }
 
+// Function to get the precedence of an operator
 int getPrecedence(char op) {
     if (op == '+' || op == '-') return 1;
     if (op == '*' || op == '/' || op == '%') return 2;
@@ -21,6 +24,7 @@ int getPrecedence(char op) {
     return 0;  // Parentheses
 }
 
+// Function to apply an operator to two operands
 double applyOperator(char op, double operand1, double operand2) {
     switch (op) {
         case '+': return operand1 + operand2;
@@ -43,6 +47,7 @@ double applyOperator(char op, double operand1, double operand2) {
     }
 }
 
+// Function to remove whitespace from a string
 string removeWhitespace(const string& str) {
     string result;
     for (char c : str) {
@@ -53,6 +58,7 @@ string removeWhitespace(const string& str) {
     return result;
 }
 
+// Function to check if a variable name is valid
 bool isValidVariableName(const string& var_name) {
     // Remove whitespace from the variable name
     string cleaned_var_name = removeWhitespace(var_name);
@@ -77,6 +83,7 @@ bool isValidVariableName(const string& var_name) {
     return true;
 }
 
+// Function to check if an expression has balanced parentheses
 bool isValidExpression(const string& expression) {
     int parenCount = 0;
     for (char c : expression) {
@@ -97,6 +104,7 @@ bool isValidExpression(const string& expression) {
     return parenCount == 0;  // All parentheses are matched
 }
 
+// Function to evaluate an expression
 double evaluateExpression(const string& expression, unordered_map<string, double>& variables) {
 
     stack<char> operators;
@@ -104,115 +112,115 @@ double evaluateExpression(const string& expression, unordered_map<string, double
 
     try {
 
-    if (!isValidExpression(expression)) {
-        throw runtime_error("Error: Invalid expression. Unmatched parentheses.");
-    }
+        if (!isValidExpression(expression)) {
+            throw runtime_error("Error: Invalid expression. Unmatched parentheses.");
+        }
 
-    for (size_t i = 0; i < expression.size(); ++i) {
-        if (isspace(expression[i])) {
-            continue;
-        } else if (isdigit(expression[i]) || expression[i] == '.') {
-            size_t j = i;
-            while (j < expression.size() && (isdigit(expression[j]) || expression[j] == '.')) {
-                ++j;
-            }
-            string num_str = expression.substr(i, j - i);
-            i = j - 1;
-            double num = stod(num_str);
-            operands.push(num);
-        } else if (isalpha(expression[i])) {
-            size_t j = i;
-            while (j < expression.size() && (isalnum(expression[j]) || expression[j] == '_')) {
-                ++j;
-            }
-            string var_name = expression.substr(i, j - i);
-            i = j - 1;
+        for (size_t i = 0; i < expression.size(); ++i) {
+            if (isspace(expression[i])) {
+                continue;
+            } else if (isdigit(expression[i]) || expression[i] == '.') {
+                size_t j = i;
+                while (j < expression.size() && (isdigit(expression[j]) || expression[j] == '.')) {
+                    ++j;
+                }
+                string num_str = expression.substr(i, j - i);
+                i = j - 1;
+                double num = stod(num_str);
+                operands.push(num);
+            } else if (isalpha(expression[i])) {
+                size_t j = i;
+                while (j < expression.size() && (isalnum(expression[j]) || expression[j] == '_')) {
+                    ++j;
+                }
+                string var_name = expression.substr(i, j - i);
+                i = j - 1;
 
-            // Remove whitespace from the variable name
-            string cleaned_var_name = removeWhitespace(var_name);
+                // Remove whitespace from the variable name
+                string cleaned_var_name = removeWhitespace(var_name);
 
-            if (cleaned_var_name == "pi" || cleaned_var_name == "e") {
-                operands.push((cleaned_var_name == "pi") ? M_PI : M_E);
-            } else if (variables.find(cleaned_var_name) != variables.end()) {
-                operands.push(variables[cleaned_var_name]);
+                if (cleaned_var_name == "pi" || cleaned_var_name == "e") {
+                    operands.push((cleaned_var_name == "pi") ? M_PI : M_E);
+                } else if (variables.find(cleaned_var_name) != variables.end()) {
+                    operands.push(variables[cleaned_var_name]);
+                } else {
+                    throw runtime_error("Error: Variable '" + cleaned_var_name + "' not defined.");
+                }
+            } else if (expression[i] == '(') {
+                operators.push('(');
+            } else if (expression[i] == ')') {
+                while (!operators.empty() && operators.top() != '(') {
+                    double operand2 = operands.top();
+                    operands.pop();
+                    double operand1 = operands.top();
+                    operands.pop();
+                    char op = operators.top();
+                    operators.pop();
+                    operands.push(applyOperator(op, operand1, operand2));
+                }
+                operators.pop();  // Pop '('
+            } else if (expression[i] == '*' && expression[i + 1] == '*') {
+                operators.push('^');  // Treat "**" as exponentiation
+                ++i;  // Skip the second '*' character
+            } else if (isOperator(expression[i])) {
+                // Handle unary minus
+                if ((expression[i] == '-' || expression[i] == '+') && (i == 0 || expression[i - 1] == '(' || isOperator(expression[i - 1]))) {
+                    if (expression[i] == '+'){
+                        continue;
+                    }
+                    // Push unary minus as multiplication by -1
+                    else{
+                        operators.push('*');
+                        operands.push(-1.0);
+                    }
+                } else {
+                    // Check for missing operand on the left
+                    if (i == 0 || expression[i - 1] == '(' || isOperator(expression[i - 1])) {
+                        throw runtime_error("Error: Missing operand on the left of operator.");
+                    }
+
+                    while (!operators.empty() && getPrecedence(operators.top()) >= getPrecedence(expression[i])) {
+                        double operand2 = operands.top();
+                        operands.pop();
+                        double operand1 = operands.top();
+                        operands.pop();
+                        char op = operators.top();
+                        operators.pop();
+                        operands.push(applyOperator(op, operand1, operand2));
+                    }
+
+                    operators.push(expression[i]);
+
+                    // Check for missing operand on the right
+                    size_t j = i + 1;
+                    if (j == expression.size() || expression[j] == ')' || isOperator(expression[j])) {
+                        throw runtime_error("Error: Missing operand on the right of operator.");
+                    }
+                }
             } else {
-                throw runtime_error("Error: Variable '" + cleaned_var_name + "' not defined.");
+                throw runtime_error("Error: Invalid character in expression.");
             }
-        } else if (expression[i] == '(') {
-            operators.push('(');
-        } else if (expression[i] == ')') {
-            while (!operators.empty() && operators.top() != '(') {
-                double operand2 = operands.top();
-                operands.pop();
-                double operand1 = operands.top();
-                operands.pop();
-                char op = operators.top();
-                operators.pop();
-                operands.push(applyOperator(op, operand1, operand2));
-            }
-            operators.pop();  // Pop '('
-        } else if (expression[i] == '*' && expression[i + 1] == '*') {
-            operators.push('^');  // Treat "**" as exponentiation
-            ++i;  // Skip the second '*' character
-        } else if (isOperator(expression[i])) {
-    // Handle unary minus
-    if ((expression[i] == '-' || expression[i] == '+') && (i == 0 || expression[i - 1] == '(' || isOperator(expression[i - 1]))) {
-        if (expression[i] == '+'){
-            continue;
-        }
-        // Push unary minus as multiplication by -1
-        else{
-        operators.push('*');
-        operands.push(-1.0);
-        }
-    } else {
-        // Check for missing operand on the left
-        if (i == 0 || expression[i - 1] == '(' || isOperator(expression[i - 1])) {
-            throw runtime_error("Error: Missing operand on the left of operator.");
         }
 
-        while (!operators.empty() && getPrecedence(operators.top()) >= getPrecedence(expression[i])) {
+        while (!operators.empty()) {
             double operand2 = operands.top();
             operands.pop();
             double operand1 = operands.top();
             operands.pop();
             char op = operators.top();
             operators.pop();
-            operands.push(applyOperator(op, operand1, operand2));
+
+            // Check for unary minus
+            if (op == '*' && operand1 == -1.0) {
+                operands.push(-operand2);  // Apply unary minus
+            } else {
+                operands.push(applyOperator(op, operand1, operand2));
+            }
         }
 
-        operators.push(expression[i]);
-
-        // Check for missing operand on the right
-        size_t j = i + 1;
-        if (j == expression.size() || expression[j] == ')' || isOperator(expression[j])) {
-            throw runtime_error("Error: Missing operand on the right of operator.");
+        if (operands.size() != 1 || !operators.empty()) {
+            throw runtime_error("Error: Invalid expression.");
         }
-    }
-        } else {
-            throw runtime_error("Error: Invalid character in expression.");
-        }
-    }
-
-    while (!operators.empty()) {
-    double operand2 = operands.top();
-    operands.pop();
-    double operand1 = operands.top();
-    operands.pop();
-    char op = operators.top();
-    operators.pop();
-
-    // Check for unary minus
-    if (op == '*' && operand1 == -1.0) {
-        operands.push(-operand2);  // Apply unary minus
-    } else {
-        operands.push(applyOperator(op, operand1, operand2));
-    }
-}
-
-    if (operands.size() != 1 || !operators.empty()) {
-        throw runtime_error("Error: Invalid expression.");
-    }
 
     } catch (const runtime_error& e) {
         cerr << e.what() << endl;
@@ -224,10 +232,10 @@ double evaluateExpression(const string& expression, unordered_map<string, double
     return operands.top();
 }
 
+// Main function
 int main() {
     string input;
     unordered_map<string, double> variables;
-
 
     cout << "-=-=-=-=- Enter expression (e.g., A=2, A + 3), 'help' for menu, or 'exit' to quit -=-=-=-=-" << endl;
     while (true) {
@@ -236,6 +244,7 @@ int main() {
 
         if (input == "exit") {
             cout << "Exiting calculator. Goodbye!" << endl;
+            cout << endl;
             break;
         } else if (input == "help") {
             cout << "Supported operations: +, -, *, /, % (modulus), ^ (exponentiation)" << endl;
@@ -269,6 +278,7 @@ int main() {
                     for (const auto& entry : variables) {
                         cout << entry.first << " = " << entry.second << endl;
                     }
+                    cout << endl;
                 }
             }
         } else {
@@ -276,6 +286,7 @@ int main() {
             double result = evaluateExpression(input, variables);
             if (!isnan(result)) {
                 cout << "Result: " << result << endl;
+                cout << endl;
             }
         }
     }
